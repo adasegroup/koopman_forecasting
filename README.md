@@ -1,5 +1,5 @@
 # Koopman Forecasting package
-The problem statement can be found [here](first_report.pdf)
+The problem statement can be found [here](reports/first_report.pdf)
 #### Baseline solutions
 For short-term forecasting, the following [algorithm](https://github.com/erichson/koopmanAE) demonstrated the state-of-the-art. The work requires the consistency of the system, that is, the ability to make predictions in both directions. This minimizes the following loss
 $$ε = λ_{id}ε_{id} + λ_{fwd}ε_{fwd} + λ_{bwd}ε_{bwd} + λ_{con}ε_{con},$$
