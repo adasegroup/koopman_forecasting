@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="VcsDirectoryMappings">
-    <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/from_fourier_to_koopman" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/koopmanAE" vcs="Git" />
-  </component>
-</project>
