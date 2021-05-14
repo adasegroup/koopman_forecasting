@@ -138,7 +138,7 @@ train_loader = DataLoader(dataset = train_data,
 # Model
 #==============================================================================
 print(Xtrain.shape)
-model = koopmanAE(m, n, args.bottleneck, args.steps, args.steps_back, args.alpha, args.init_scale)
+model = KoopmanAE(m, n, args.bottleneck, args.steps, args.steps_back, args.alpha, args.init_scale)
 print('koopmanAE')
 #model = torch.nn.DataParallel(model)
 model = model.to(device)
@@ -189,9 +189,9 @@ for i in range(30):
 
             for j in range(args.pred_steps):
                 if isinstance(z, tuple):
-                    z = model.dynamics(*z) # evolve system in time
+                    z = model.Dynamics(*z) # evolve system in time
                 else:
-                    z = model.dynamics(z)
+                    z = model.Dynamics(z)
                 if isinstance(z, tuple):
                     x_pred = model.decoder(z[0])
                 else:
@@ -253,7 +253,7 @@ plt.close('all')
 model.eval()
 
 #if hasattr(model.dynamics, 'dynamics'):
-A =  model.dynamics.dynamics.weight.cpu().data.numpy()
+A =  model.Dynamics.Dynamics.weight.cpu().data.numpy()
 #A =  model.module.test.data.cpu().data.numpy()
 w, v = np.linalg.eig(A)
 print(np.abs(w))

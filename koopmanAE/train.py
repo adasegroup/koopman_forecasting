@@ -68,8 +68,8 @@ def train(model, train_loader, lr, weight_decay,
                         loss_bwd += criterion(out_back[k], data_list[::-1][k+1].to(device))
                         
                                
-                A = model.dynamics.dynamics.weight
-                B = model.backdynamics.dynamics.weight
+                A = model.Dynamics.Dynamics.weight
+                B = model.backdynamics.Dynamics.weight
 
                 K = A.shape[-1]
 
@@ -125,8 +125,8 @@ def train(model, train_loader, lr, weight_decay,
 
                 epoch_hist.append(epoch+1) 
 
-                if hasattr(model.dynamics, 'dynamics'):
-                    w, _ = np.linalg.eig(model.dynamics.dynamics.weight.data.cpu().numpy())
+                if hasattr(model.Dynamics, 'dynamics'):
+                    w, _ = np.linalg.eig(model.Dynamics.Dynamics.weight.data.cpu().numpy())
                     print(np.abs(w))
 
 

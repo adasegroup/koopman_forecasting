@@ -15,6 +15,7 @@ python driver.py --dataset pendulum --folder results_pendulum --bottleneck 6 --b
 Use the following code to plot the results:
 ```
 python plot_pred_error.py
+
 ```
 
 <img src="https://github.com/erichson/koopmanAE/blob/master/plot/pred_pendulum.png" width="800">

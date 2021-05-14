@@ -1,15 +1,19 @@
 from torch import nn
 import torch
 
+FORWARD = 'forward'
+BACKWARD = 'backward'
+
+
 def gaussian_init_(n_units, std=1):    
     sampler = torch.distributions.Normal(torch.Tensor([0]), torch.Tensor([std/n_units]))
     Omega = sampler.sample((n_units, n_units))[..., 0]  
     return Omega
 
 
-class encoderNet(nn.Module):
+class EncoderNet(nn.Module):
     def __init__(self, m, n, b, ALPHA = 1):
-        super(encoderNet, self).__init__()
+        super(EncoderNet, self).__init__()
         self.N = m * n
         self.tanh = nn.Tanh()
 
@@ -32,9 +36,9 @@ class encoderNet(nn.Module):
         return x
 
 
-class decoderNet(nn.Module):
+class DecoderNet(nn.Module):
     def __init__(self, m, n, b, ALPHA = 1):
-        super(decoderNet, self).__init__()
+        super(DecoderNet, self).__init__()
 
         self.m = m
         self.n = n
@@ -62,9 +66,9 @@ class decoderNet(nn.Module):
 
 
 
-class dynamics(nn.Module):
+class Dynamics(nn.Module):
     def __init__(self, b, init_scale):
-        super(dynamics, self).__init__()
+        super(Dynamics, self).__init__()
         self.dynamics = nn.Linear(b, b, bias=False)
         self.dynamics.weight.data = gaussian_init_(b, std=1)           
         U, _, V = torch.svd(self.dynamics.weight.data)
@@ -76,11 +80,11 @@ class dynamics(nn.Module):
         return x
 
 
-class dynamics_back(nn.Module):
+class DynamicsBack(nn.Module):
     def __init__(self, b, omega):
-        super(dynamics_back, self).__init__()
+        super(DynamicsBack, self).__init__()
         self.dynamics = nn.Linear(b, b, bias=False)
-        self.dynamics.weight.data = torch.pinverse(omega.dynamics.weight.data.t())     
+        self.dynamics.weight.data = torch.pinverse(omega.Dynamics.weight.data.t())
 
     def forward(self, x):
         x = self.dynamics(x)
@@ -89,26 +93,25 @@ class dynamics_back(nn.Module):
 
 
 
-class koopmanAE(nn.Module):
+class KoopmanAE(nn.Module):
     def __init__(self, m, n, b, steps, steps_back, alpha = 1, init_scale=1):
-        super(koopmanAE, self).__init__()
+        super(KoopmanAE, self).__init__()
         self.steps = steps
         self.steps_back = steps_back
         
-        self.encoder = encoderNet(m, n, b, ALPHA = alpha)
-        self.dynamics = dynamics(b, init_scale)
-        self.backdynamics = dynamics_back(b, self.dynamics)
-        self.decoder = decoderNet(m, n, b, ALPHA = alpha)
+        self.encoder = EncoderNet(m, n, b, ALPHA = alpha)
+        self.dynamics = Dynamics(b, init_scale)
+        self.backdynamics = DynamicsBack(b, self.dynamics)
+        self.decoder = DecoderNet(m, n, b, ALPHA = alpha)
 
 
-    def forward(self, x, mode='forward'):
+    def forward(self, x, mode=FORWARD):
         out = []
         out_back = []
         z = self.encoder(x.contiguous())
         q = z.contiguous()
 
-        
-        if mode == 'forward':
+        if mode == FORWARD:
             for _ in range(self.steps):
                 q = self.dynamics(q)
                 out.append(self.decoder(q))
@@ -116,7 +119,7 @@ class koopmanAE(nn.Module):
             out.append(self.decoder(z.contiguous())) 
             return out, out_back    
 
-        if mode == 'backward':
+        if mode == BACKWARD:
             for _ in range(self.steps_back):
                 q = self.backdynamics(q)
                 out_back.append(self.decoder(q))
