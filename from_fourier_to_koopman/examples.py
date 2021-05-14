@@ -12,13 +12,13 @@ xhat_fourier = f.predict(5000)
 
 
 
-from fourier_koopman import koopman, fully_connected_mse
+from fourier_koopman import koopman, FullyConnectedMSE
 import numpy as np
 
 x = np.sin(2*np.pi/24*np.arange(5000))**17
 x = np.expand_dims(x,-1).astype(np.float32)
 
-k = koopman(fully_connected_mse(x_dim=1, num_freqs=1, n=512), device='cpu')
+k = koopman(FullyConnectedMSE(x_dim=1, num_freqs=1, n=512), device='cpu')
 k.fit(x[:3500], iterations = 300, interval = 25, verbose=True)
 
 xhat_koopman = k.predict(5000)
