@@ -8,26 +8,23 @@ import numpy as np
 import torch
 
 
-class fourier:
-    '''
-        
+class Fourier:
+    """
     num_freqs: number of frequencies assumed to be present in data
         type: int
 
     device: The device on which the computations are carried out.
         Example: cpu, cuda:0
         default = 'cpu'
-        
-    '''
+    """
 
-    def __init__(self, num_freqs, device = 'cpu'):
-        
+    def __init__(self, num_freqs, device='cpu'):
+
         self.num_freqs = num_freqs
         self.device = device
-    
-    
+
     def fft(self, xt):
-        '''
+        """
         Given temporal data xt, fft performs the initial guess of the 
         frequencies contained in the data using the FFT.
 
@@ -39,10 +36,7 @@ class fourier:
         Returns
         -------
         None.
-
-        '''
-
-        
+        """
         k = self.num_freqs
         self.freqs = []
         
@@ -53,39 +47,29 @@ class fourier:
             if len(self.freqs) == 0:
                 residual = xt
             else:
-                t = np.expand_dims(np.arange(N)+1,-1)
+                t = np.expand_dims(np.arange(N)+1, -1)
                 freqs = np.array(self.freqs)
                 Omega = np.concatenate([np.cos(t*2*np.pi*freqs),
-                                        np.sin(t*2*np.pi*freqs)],-1)
+                                        np.sin(t*2*np.pi*freqs)], -1)
                 self.A = np.dot(np.linalg.pinv(Omega), xt)
-                
-                pred = np.dot(Omega,self.A)
-                
+                pred = np.dot(Omega, self.A)
                 residual = pred-xt
-            
-            
+
             ffts = 0
             for j in range(xt.shape[1]):
                 ffts += np.abs(np.fft.fft(residual[:,j])[:N//2])
-        
-            
+
             w = np.fft.fftfreq(N,1)[:N//2]
             idxs = np.argmax(ffts)
             
             self.freqs.append(w[idxs])
-            
-            
-            t = np.expand_dims(np.arange(N)+1,-1)
-            
-            Omega = np.concatenate([np.cos(t*2*np.pi*self.freqs),
-                                    np.sin(t*2*np.pi*self.freqs)],-1)
-    
-            self.A = np.dot(np.linalg.pinv(Omega), xt)
 
-    
-    
-    def sgd(self, xt, iterations = 1000, learning_rate = 3E-9, verbose=False):
-        '''
+            Omega = self.__get_omega(N)
+            self.A = np.dot(np.linalg.pinv(Omega), xt)
+        return None
+
+    def sgd(self, xt, iterations=1000, learning_rate=3E-9, verbose=False):
+        """
         Given temporal data xt, sgd improves the initial guess of omega
         by SGD. It uses the pseudo-inverse to obtain A.
 
@@ -103,8 +87,7 @@ class fourier:
         Returns
         -------
         None.
-
-        '''
+        """
         
         A = torch.tensor(self.A, requires_grad=False, device=self.device)
         freqs = torch.tensor(self.freqs, requires_grad=True, device=self.device)
@@ -112,11 +95,10 @@ class fourier:
 
         o2 = torch.optim.SGD([freqs], lr=learning_rate)
         
-        t = torch.unsqueeze(torch.arange(len(xt), dtype = torch.get_default_dtype(),
-                                         device = self.device)+1,-1)
+        t = torch.unsqueeze(torch.arange(len(xt), dtype=torch.get_default_dtype(),
+                                         device=self.device)+1, -1)
         
         loss = 0
-        
         for i in range(iterations):
             
             Omega = torch.cat([torch.cos(t*2*np.pi*freqs),
@@ -134,16 +116,13 @@ class fourier:
             loss = loss.cpu().detach().numpy()
             if verbose:
                 print(loss)
-            
-            
+
         self.A = A.cpu().detach().numpy()
         self.freqs = freqs.cpu().detach().numpy()
-        
-        
-        
+        return None
+
     def fit(self, xt, learning_rate = 1E-5, iterations = 1000, verbose=False):
-        '''
-        
+        """
         Parameters
         ----------
         xt : TYPE numpy.array
@@ -158,20 +137,15 @@ class fourier:
         Returns
         -------
         None.
-
-        '''
+        """
         
         self.fft(xt)
-        self.sgd(xt, iterations = iterations, 
-                    learning_rate = learning_rate/xt.shape[0],
-                    verbose = verbose)
-        
+        self.sgd(xt, iterations=iterations,
+                 learning_rate=learning_rate/xt.shape[0],
+                 verbose=verbose)
 
-    
-    
-    
     def predict(self, T):
-        '''
+        """
         Predicts the data from 1 to T.
 
         Parameters
@@ -183,11 +157,13 @@ class fourier:
         -------
         TYPE numpy.array
             xhat from 0 to T.
+        """
+        
+        Omega = self.__get_omega(T)
+        return np.dot(Omega, self.A)
 
-        '''
-        
-        t = np.expand_dims(np.arange(T)+1,-1)
-        Omega = np.concatenate([np.cos(t*2*np.pi*self.freqs),
-                                np.sin(t*2*np.pi*self.freqs)],-1)
-        
-        return np.dot(Omega,self.A)
+    def __get_omega(self, T):
+        t = np.expand_dims(np.arange(T) + 1, -1)
+        omega = np.concatenate([np.cos(t * 2 * np.pi * self.freqs),
+                                np.sin(t * 2 * np.pi * self.freqs)], -1)
+        return omega

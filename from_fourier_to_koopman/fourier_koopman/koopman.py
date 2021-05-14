@@ -10,10 +10,10 @@ from torch import nn
 from torch import optim
 
 import numpy as np
-from scipy.ndimage import gaussian_filter
+# from scipy.ndimage import gaussian_filter
 
 
-class koopman(nn.Module):
+class Koopman(nn.Module):
     
     r'''
     
@@ -40,14 +40,11 @@ class koopman(nn.Module):
             
         
     '''
-    
-    
+
     def __init__(self, model_obj, sample_num = 12, **kwargs):
-        
-        
-        super(koopman, self).__init__()
+
+        super(Koopman, self).__init__()
         self.num_freq = model_obj.num_freq
-    
     
         if 'device' in kwargs:
             self.device = kwargs['device']
@@ -68,7 +65,6 @@ class koopman(nn.Module):
             
         self.multi_gpu = multi_gpu
             
-            
         self.parallel_batch_size = kwargs['parallel_batch_size'] if 'parallel_batch_size' in kwargs else 1000
         self.batch_size = kwargs['batch_size'] if 'batch_size' in kwargs else 32
             
@@ -77,9 +73,6 @@ class koopman(nn.Module):
             
         self.sample_num = sample_num
 
-        
-        
-        
     def sample_error(self, xt, which):
         '''
         
@@ -127,8 +120,7 @@ class koopman(nn.Module):
             torch.cuda.empty_cache()
         
         return np.concatenate(errors, axis=0)
-    
-    
+
     def reconstruct(self, errors, use_heuristic = True):
         
         e_fft = np.fft.fft(errors)
@@ -143,10 +135,8 @@ class koopman(nn.Module):
         if use_heuristic:
             E = -np.abs(E-np.median(E))
             #E = gaussian_filter(E, 5)
-            
         return E, E_ft
-    
-    
+
     def fft(self, xt, i, verbose=False):
         '''
         
@@ -191,10 +181,7 @@ class koopman(nn.Module):
             j+=1
             
         return E, E_ft
-    
-    
-    
-    
+
     def sgd(self, xt, verbose=False):
         '''
         
@@ -223,8 +210,7 @@ class koopman(nn.Module):
         
         opt = optim.SGD(self.model_obj.parameters(), lr=3e-3)
         opt_omega = optim.SGD([omega], lr=1e-7/T)
-        
-        
+
         T = xt.shape[0]
         t = torch.arange(T, device=self.device)
         
@@ -257,13 +243,10 @@ class koopman(nn.Module):
             print('Setting to', 2*np.pi/omega)
             
         self.omegas = omega.data
-                
 
         return np.mean(losses)
-    
-    
-    
-    def fit(self, xt, iterations = 10, interval = 5, cutoff = np.inf, verbose=False):
+
+    def fit(self, xt, iterations=10, interval=5, cutoff=np.inf, verbose=False):
         '''
         Given a dataset, this function alternatingly optimizes omega and 
         parameters of f. Specifically, the algorithm performs interval many
@@ -297,17 +280,15 @@ class koopman(nn.Module):
                     self.fft(xt, k, verbose=verbose)
             
             if verbose:
-                print('Iteration ',i)
+                print('Iteration ', i)
                 print(2*np.pi/self.omegas)
             
             l = self.sgd(xt, verbose=verbose)
             if verbose:
-                print('Loss: ',l)
+                print('Loss: ', l)
             losses.append(l)
             
         return losses
-            
-            
             
     def predict(self, T):
         '''
@@ -335,21 +316,15 @@ class koopman(nn.Module):
             mu = self.model_obj.module.decode(k)
         else:
             mu = self.model_obj.decode(k)
-        
 
         return mu.cpu().detach().numpy()
 
 
-
-
-
-class model_object(nn.Module):
+class ModelObject(nn.Module):
     
     def __init__(self, num_freq):
-        super(model_object, self).__init__()
+        super(ModelObject, self).__init__()
         self.num_freq = num_freq
-        
-    
     
     def forward(self, y, x):
         '''
@@ -364,8 +339,7 @@ class model_object(nn.Module):
                 type: torch.tensor
                 dimensions: [T, ...]
         '''
-        
-        
+
         raise NotImplementedError()
     
     def decode(self, y):
@@ -384,19 +358,15 @@ class model_object(nn.Module):
         raise NotImplementedError()
 
 
+class FullyConnectedMSE(ModelObject):
 
-
-class fully_connected_mse(model_object):
-    
-    
     def __init__(self, x_dim, num_freqs, n):
-        super(fully_connected_mse, self).__init__(num_freqs)
+        super(FullyConnectedMSE, self).__init__(num_freqs)
         
         self.l1 = nn.Linear(2*num_freqs, n)
-        self.l2 = nn.Linear(n,32)
-        self.l3 = nn.Linear(32,x_dim)
-        
-        
+        self.l2 = nn.Linear(n, 32)
+        self.l3 = nn.Linear(32, x_dim)
+
     def decode(self, x):
         o1 = nn.Tanh()(self.l1(x))
         o2 = nn.Tanh()(self.l2(o1))
@@ -404,9 +374,6 @@ class fully_connected_mse(model_object):
         
         return o3
         
-        
     def forward(self, y, x):
         xhat = self.decode(y)
         return torch.mean((xhat-x)**2, dim=-1)
-    
-        
