@@ -1,19 +1,12 @@
 import argparse
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-import torch
-from torch.utils.data import DataLoader, Dataset
-
-import torch.nn.init as init
-
-from read_dataset import data_from_name
-from model import *
-from tools import *
-from train import *
-
 import os
+
+import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
+
+from model import *
+from read_dataset import data_from_name
+from train import *
 
 #==============================================================================
 # Training settings
@@ -240,6 +233,7 @@ print('Average error overarll pred: ', np.mean(error.mean(axis=0)))
     
     
 import scipy
+from scipy import io
 save_preds = {'pred' : np.asarray(snapshots_pred), 'truth': np.asarray(snapshots_truth), 'init': np.asarray(init0.float().to(device).data.cpu().numpy().reshape(m,n))} 
 scipy.io.savemat(args.folder +'/snapshots_pred.mat', dict(save_preds), appendmat=True, format='5', long_field_names=False, do_compression=False, oned_as='row')
 
