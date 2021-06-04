@@ -11,6 +11,8 @@ For long-term forecasting, there was proposed [Spectral Methods usage with Koopm
 
 The implementation and instructure are in the corresponding folder [from_fourier_to_koopman](from_fourier_to_koopman)
 
+![Screenshot](reports/manifold.png)
+
 #### Repository structure
 ``` 
 .
